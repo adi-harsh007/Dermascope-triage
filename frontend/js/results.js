@@ -22,7 +22,7 @@ function renderResultsImage(data) {
     }
     if (note) {
         note.textContent = state.heatmapBase64
-            ? "As submitted. Display adjustments in the console are not applied here."
+            ? "As submitted. Console display adjustments are not applied here."
             : "As submitted. No Grad-CAM attribution was returned for this scan.";
     }
 
@@ -138,6 +138,11 @@ function renderOodPanel(data) {
 export function renderResultsView(data) {
     if (!data) return;
 
+    const empty = document.getElementById("results-empty");
+    const body = document.getElementById("results-content");
+    if (empty) empty.classList.add("hidden");
+    if (body) body.classList.remove("hidden");
+
     const isHighRisk = data.is_high_risk;
     const confidencePct = (data.confidence * 100).toFixed(1);
     const meta = PATHOLOGY_META[data.prediction] || {
@@ -153,24 +158,24 @@ export function renderResultsView(data) {
 
     if (banner && bannerIcon && bannerText) {
         const bannerBase = "px-4 py-3 rounded-xl border flex items-center gap-3";
-        const iconBase = "material-symbols-outlined text-[22px] shrink-0";
-        const textBase = "text-[13px] font-semibold leading-5";
+        const iconBase = "material-symbols-outlined text-[20px] shrink-0";
+        const textBase = "text-[13px] font-medium leading-5";
 
         if (!isHighRisk && data.melanoma_alert) {
-            banner.className = `${bannerBase} border-risk-mid/45 bg-risk-mid/10`;
+            banner.className = `${bannerBase} border-risk-mid/35 bg-risk-mid/10`;
             bannerIcon.className = `${iconBase} text-risk-mid`;
             bannerIcon.textContent = "release_alert";
             bannerText.className = `${textBase} text-risk-mid`;
             bannerText.textContent =
                 `Melanoma not excluded — p(mel) ${(data.melanoma_probability * 100).toFixed(1)}%. Specialist review recommended.`;
         } else if (isHighRisk) {
-            banner.className = `${bannerBase} border-risk-high/45 bg-risk-high/10`;
+            banner.className = `${bannerBase} border-risk-high/35 bg-risk-high/10`;
             bannerIcon.className = `${iconBase} text-risk-high`;
             bannerIcon.textContent = "warning";
             bannerText.className = `${textBase} text-risk-high`;
             bannerText.textContent = "Predicted class is in the high-risk group. Specialist assessment is indicated.";
         } else {
-            banner.className = `${bannerBase} border-risk-low/45 bg-risk-low/10`;
+            banner.className = `${bannerBase} border-risk-low/35 bg-risk-low/10`;
             bannerIcon.className = `${iconBase} text-risk-low`;
             bannerIcon.textContent = "check_circle";
             bannerText.className = `${textBase} text-risk-low`;
@@ -188,7 +193,7 @@ export function renderResultsView(data) {
         const circumference = 2 * Math.PI * r;
         gaugeCircle.setAttribute("stroke-dasharray", circumference.toFixed(2));
         gaugeCircle.style.strokeDashoffset = circumference * (1 - data.confidence);
-        gaugeCircle.style.stroke = isHighRisk ? "#e8746c" : "#6fc0a4";
+        gaugeCircle.style.stroke = isHighRisk ? "#f87171" : "#34d399";
     }
     if (gaugeStatus) {
         gaugeStatus.textContent = isHighRisk ? "High risk" : "Not flagged";
@@ -240,7 +245,7 @@ export function renderResultsView(data) {
             const isTop = clsKey === data.prediction;
             const barWidth = Math.max(pct, 1.5);
 
-            const barColor = isTop ? (isHighRisk ? "bg-risk-high" : "bg-risk-low") : "bg-outline";
+            const barColor = isTop ? (isHighRisk ? "bg-risk-high" : "bg-risk-low") : "bg-on-surface-muted/45";
             const nameColor = isTop ? "text-on-surface font-semibold" : "text-on-surface-variant";
             const pctColor = isTop
                 ? (isHighRisk ? "text-risk-high font-semibold" : "text-risk-low font-semibold")
@@ -251,11 +256,11 @@ export function renderResultsView(data) {
                     <div class="flex items-baseline justify-between gap-3 mb-1.5">
                         <span class="text-[13px] ${nameColor} truncate">
                             ${clsMeta.name}
-                            <span class="font-data-sm text-[12px] text-on-surface-muted">${clsKey.toUpperCase()}</span>
+                            <span class="font-data-sm text-[11.5px] text-on-surface-muted ml-1">${clsKey.toUpperCase()}</span>
                         </span>
-                        <span class="font-data-sm text-[13px] tabular ${pctColor}">${pct}%</span>
+                        <span class="font-data-sm text-[12.5px] tabular ${pctColor}">${pct}%</span>
                     </div>
-                    <div class="h-1.5 bg-surface-container rounded-full overflow-hidden" role="img" aria-label="${clsMeta.name}: ${pct} percent">
+                    <div class="h-1.5 bg-surface-container-highest rounded-full overflow-hidden" role="img" aria-label="${clsMeta.name}: ${pct} percent">
                         <div class="${barColor} h-full rounded-full transition-all duration-700" style="width: ${barWidth}%"></div>
                     </div>
                 </div>
@@ -475,4 +480,3 @@ export async function downloadClinicalReport() {
         host.style.display = "";
     }
 }
-

@@ -7,7 +7,7 @@ function caseCellMarkup(record) {
     const label = record.case_label;
     return `
         <td class="py-3 px-5 case-cell" data-session-id="${record.id}">
-            <button type="button" class="case-edit-btn text-left text-[13px] rounded px-1.5 -mx-1.5 py-0.5 transition-colors ${
+            <button type="button" class="case-edit-btn text-left text-[13px] rounded-md px-2 -mx-2 py-0.5 transition-colors ${
                 label ? "text-on-surface hover:bg-surface-container-high"
                       : "text-on-surface-muted hover:text-on-surface hover:bg-surface-container-high"
             }" title="${label ? "Change the case label" : "Assign a case label"}">${
@@ -43,11 +43,11 @@ export function renderHistoryTable(records) {
         const isHigh = log.is_high_risk;
 
         return `
-            <tr class="border-b border-outline-variant hover:bg-surface-container transition-colors">
+            <tr class="border-b border-outline-variant hover:bg-surface-container/70 transition-colors">
                 <td class="py-3 px-5 font-data-sm text-[12px] text-on-surface-muted">#${log.id}</td>
                 <td class="py-3 px-5 font-data-sm text-[12px] text-on-surface-variant tabular">${dateStr} <span class="text-on-surface-muted">${timeStr}</span></td>
                 ${caseCellMarkup(log)}
-                <td class="py-3 px-5 text-[13px] text-on-surface">${meta.name} <span class="font-data-sm text-[12px] text-on-surface-muted">${log.prediction.toUpperCase()}</span></td>
+                <td class="py-3 px-5 text-[13px] text-on-surface">${meta.name} <span class="font-data-sm text-[11.5px] text-on-surface-muted ml-1">${log.prediction.toUpperCase()}</span></td>
                 <td class="py-3 px-5 font-data-sm text-[13px] tabular text-right ${isHigh ? "text-risk-high" : "text-on-surface"}">${confPct}%</td>
                 <td class="py-3 px-5">
                     ${isHigh
@@ -55,9 +55,14 @@ export function renderHistoryTable(records) {
                         : `<span class="chip chip--low">Not flagged</span>`}
                 </td>
                 <td class="py-3 px-5 text-right">
-                    <button type="button" data-delete-id="${log.id}" class="btn-icon history-delete-btn hover:text-risk-high" aria-label="Delete record ${log.id}" title="Delete record">
-                        <span class="material-symbols-outlined">delete</span>
-                    </button>
+                    <div class="inline-flex items-center gap-1">
+                        <button type="button" data-compare-id="${log.id}" class="btn-icon history-compare-btn" aria-label="Compare record ${log.id}" title="Open in Compare">
+                            <span class="material-symbols-outlined">view_column</span>
+                        </button>
+                        <button type="button" data-delete-id="${log.id}" class="btn-icon history-delete-btn hover:text-risk-high" aria-label="Delete record ${log.id}" title="Delete record">
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -271,4 +276,3 @@ export function beginCaseEdit(cell, sessionId, current) {
     });
     input.addEventListener("blur", () => finish(true));
 }
-

@@ -15,10 +15,10 @@ function renderModelProvenance(card) {
     if (!box || !icon || !text) return;
 
     const base = "px-4 py-3 rounded-xl border flex items-start gap-3";
-    const iconBase = "material-symbols-outlined text-[22px] shrink-0";
+    const iconBase = "material-symbols-outlined text-[20px] shrink-0 mt-0.5";
 
     if (!card.evaluation_available) {
-        box.className = `${base} border-risk-mid/45 bg-risk-mid/10`;
+        box.className = `${base} border-risk-mid/35 bg-risk-mid/10`;
         icon.className = `${iconBase} text-risk-mid`;
         icon.textContent = "warning";
         text.textContent =
@@ -28,7 +28,7 @@ function renderModelProvenance(card) {
     }
 
     if (card.evaluation_describes_this_configuration === true) {
-        box.className = `${base} border-risk-low/45 bg-risk-low/10`;
+        box.className = `${base} border-risk-low/35 bg-risk-low/10`;
         icon.className = `${iconBase} text-risk-low`;
         icon.textContent = "check_circle";
         text.textContent =
@@ -40,7 +40,7 @@ function renderModelProvenance(card) {
     if (card.evaluation_describes_this_configuration === false) {
         const differing = (card.evaluation_threshold_mismatches || [])
             .map(m => `${m.class.toUpperCase()} ${m.evaluated_with} → ${m.serving}`).join(", ");
-        box.className = `${base} border-risk-high/45 bg-risk-high/10`;
+        box.className = `${base} border-risk-high/35 bg-risk-high/10`;
         icon.className = `${iconBase} text-risk-high`;
         icon.textContent = "error";
         text.textContent =
@@ -189,10 +189,10 @@ function renderModelPerClass(card) {
         const m = perClass[cls] || {};
         const isHigh = HIGH_RISK_CLASSES.includes(cls);
         return `
-            <tr class="border-b border-outline-variant/60">
+            <tr class="border-b border-outline-variant/60 hover:bg-surface-container/60 transition-colors">
                 <td class="py-3 px-5 ${isHigh ? "border-l-2 border-l-risk-high/60" : ""}">
                     <span class="text-[13px] text-on-surface">${meta.name}</span>
-                    <span class="font-data-sm text-[12px] text-on-surface-muted ml-1.5">${cls.toUpperCase()}</span>
+                    <span class="font-data-sm text-[11.5px] text-on-surface-muted ml-1.5">${cls.toUpperCase()}</span>
                 </td>
                 <td class="py-3 px-5 text-right font-data-sm text-[13px] tabular text-on-surface-variant">${
                     typeof m.support === "number" ? m.support : "—"}</td>
@@ -235,10 +235,10 @@ function renderModelConfusion(card) {
             const share = value / total;
             const onDiagonal = i === j;
             const bg = value === 0 ? "transparent"
-                : onDiagonal ? `rgba(111,192,164,${(0.10 + share * 0.55).toFixed(3)})`
-                             : `rgba(232,116,108,${(0.10 + share * 0.75).toFixed(3)})`;
+                : onDiagonal ? `rgba(52,211,153,${(0.10 + share * 0.45).toFixed(3)})`
+                             : `rgba(248,113,113,${(0.10 + share * 0.65).toFixed(3)})`;
             const strong = value > 0 && share >= 0.08;
-            return `<td class="py-2 px-2 text-center font-data-sm text-[13px] tabular ${
+            return `<td class="py-2 px-2 text-center font-data-sm text-[13px] tabular rounded-sm ${
                 strong ? "text-on-surface font-semibold" : "text-on-surface-variant"
             }" style="background:${bg}" title="${classes[i].toUpperCase()} predicted as ${
                 classes[j].toUpperCase()}: ${value} of ${total}">${value}</td>`;
@@ -318,4 +318,3 @@ export async function loadModelCard() {
         ? `EfficientNet-B3 on HAM10000, measured on ${card.evaluation.test_set_size.toLocaleString()} held-out images.`
         : "What this deployment serves, and what it measured.");
 }
-

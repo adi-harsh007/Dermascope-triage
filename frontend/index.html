@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DermaScope Triage — Dermoscopic Lesion Classifier</title>
-    <meta name="description" content="Decision-support interface for a PyTorch EfficientNet-B3 skin lesion classifier trained on HAM10000." />
+    <meta name="description" content="Decision-support interface for a PyTorch EfficientNet-B3 dermoscopic skin lesion classifier trained on HAM10000." />
     <meta name="color-scheme" content="dark" />
 
     <!-- Tailwind CSS -->
@@ -20,73 +20,79 @@
 
     <link rel="stylesheet" href="/css/styles.css" />
 </head>
-<body class="bg-background font-body-md text-body-md text-on-surface antialiased">
+<body class="bg-background font-body-md text-body-md text-on-surface antialiased selection:bg-on-surface/20 selection:text-on-surface">
 
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-surface-container-high focus:rounded-lg focus:text-on-surface">Skip to content</a>
 
     <!-- ══ SIDEBAR ═══════════════════════════════════════════════════════ -->
     <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-surface-container-low border-r border-outline-variant z-50 flex flex-col">
-        <div class="px-gutter py-4 flex items-center gap-3 border-b border-outline-variant">
-            <div class="w-8 h-8 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
-                <span class="material-symbols-outlined text-[19px]">biotech</span>
+        <div class="px-4 h-[56px] flex items-center gap-3 border-b border-outline-variant shrink-0">
+            <div class="w-8 h-8 rounded-lg bg-surface-container-highest border border-outline flex items-center justify-center text-on-surface shrink-0 shadow-inner">
+                <span class="material-symbols-outlined text-[18px]">biotech</span>
             </div>
             <div class="min-w-0">
-                <div class="text-[15px] font-semibold text-on-surface leading-5">DermaScope</div>
-                <div class="text-[11px] text-on-surface-muted leading-4">Lesion triage</div>
+                <div class="text-[14px] font-semibold tracking-tight text-on-surface leading-4">DermaScope</div>
+                <div class="text-[11px] text-on-surface-muted leading-4 mt-0.5">Lesion triage</div>
             </div>
             <button id="btn-nav-close" class="btn-icon ml-auto lg:hidden" aria-label="Close navigation">
                 <span class="material-symbols-outlined">close</span>
             </button>
         </div>
 
-        <nav class="flex-1 py-3 flex flex-col overflow-y-auto" id="main-nav" aria-label="Main">
-            <a href="#" data-view="view-console" class="nav-item is-active" aria-current="page">
-                <span class="material-symbols-outlined">upload_file</span><span>Scan console</span>
+        <nav class="flex-1 py-3 flex flex-col gap-0.5 overflow-y-auto" id="main-nav" aria-label="Main">
+            <div id="nav-active-pill" aria-hidden="true"></div>
+            <a href="#console" data-view="view-console" class="nav-item is-active" aria-current="page">
+                <span class="material-symbols-outlined">center_focus_strong</span><span>Scan console</span>
             </a>
-            <a href="#" data-view="view-results" class="nav-item">
-                <span class="material-symbols-outlined">bar_chart</span><span>Result</span>
+            <a href="#result" data-view="view-results" class="nav-item">
+                <span class="material-symbols-outlined">analytics</span><span>Result</span>
             </a>
-            <a href="#" data-view="view-compare" class="nav-item">
+            <a href="#compare" data-view="view-compare" class="nav-item">
                 <span class="material-symbols-outlined">view_column</span><span>Compare</span>
             </a>
-            <a href="#" data-view="view-analytics" class="nav-item">
+            <a href="#history" data-view="view-analytics" class="nav-item">
                 <span class="material-symbols-outlined">history</span><span>History</span>
             </a>
-            <a href="#" data-view="view-knowledge" class="nav-item">
+            <a href="#reference" data-view="view-knowledge" class="nav-item">
                 <span class="material-symbols-outlined">menu_book</span><span>Reference</span>
             </a>
-            <a href="#" data-view="view-model" class="nav-item">
+            <a href="#model" data-view="view-model" class="nav-item">
                 <span class="material-symbols-outlined">fact_check</span><span>Model card</span>
             </a>
         </nav>
 
-        <div class="p-4 border-t border-outline-variant">
+        <div class="p-3 border-t border-outline-variant">
             <div class="panel-inset p-3">
                 <div class="flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-risk-low shrink-0"></span>
-                    <span class="text-[12px] font-medium text-on-surface">EfficientNet-B3 loaded</span>
+                    <span id="sidebar-status-dot" class="w-2 h-2 rounded-full bg-risk-mid shrink-0"></span>
+                    <span id="sidebar-status-title" class="text-[12px] font-medium text-on-surface truncate">Checking server&hellip;</span>
                 </div>
-                <p class="text-[11px] text-on-surface-muted mt-1 leading-4">7 classes &middot; HAM10000</p>
+                <p id="sidebar-status-sub" class="font-data-sm text-[11px] text-on-surface-muted mt-1 leading-4">300px &middot; 7 classes &middot; HAM10000</p>
             </div>
         </div>
     </aside>
 
-    <div id="nav-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden"></div>
+    <div id="nav-backdrop" class="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 hidden lg:hidden"></div>
 
     <!-- ══ MAIN COLUMN ═══════════════════════════════════════════════════ -->
     <div class="lg:pl-64">
-        <header id="topbar" class="fixed top-0 left-0 lg:left-64 right-0 h-[56px] bg-surface/90 backdrop-blur border-b border-outline-variant z-30 flex items-center justify-between gap-3 px-4 sm:px-gutter">
-            <div class="flex items-center gap-3 min-w-0">
+        <header id="topbar" class="fixed top-0 left-0 lg:left-64 right-0 h-[56px] bg-background/85 backdrop-blur-md border-b border-outline-variant z-30 flex items-center justify-between gap-3 px-4 sm:px-gutter">
+            <div class="flex items-center gap-2.5 min-w-0">
                 <button id="btn-nav-open" class="btn-icon lg:hidden" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
                     <span class="material-symbols-outlined">menu</span>
                 </button>
-                <span class="chip chip--low">
-                    <span class="w-1.5 h-1.5 rounded-full bg-risk-low"></span>Service online
+                <div class="flex items-center gap-2 text-[13px] min-w-0">
+                    <span class="text-on-surface-muted hidden sm:inline">DermaScope</span>
+                    <span class="text-on-surface-muted/60 hidden sm:inline">/</span>
+                    <span id="topbar-view-name" class="font-medium text-on-surface truncate">Scan console</span>
+                </div>
+                <span id="topbar-status-chip" class="chip ml-1">
+                    <span id="topbar-status-dot" class="w-1.5 h-1.5 rounded-full bg-risk-mid"></span>
+                    <span id="topbar-status-text">Checking</span>
                 </span>
-                <span class="text-[12px] text-on-surface-muted hidden md:inline truncate">Input screening runs on every scan</span>
             </div>
             <div class="flex items-center gap-2 shrink-0">
-                <button id="btn-export-pdf" class="btn-export-pdf-trigger btn">
+                <button id="btn-export-pdf" class="btn-export-pdf-trigger btn hidden">
                     <span class="material-symbols-outlined">picture_as_pdf</span>
                     <span class="hidden sm:inline">Export report</span>
                 </button>
@@ -96,23 +102,19 @@
         <main id="main-content" class="relative pt-[56px] min-h-screen bg-surface">
 
             <!-- ══════════ VIEW 1 · SCAN CONSOLE ══════════════════════════ -->
-            <!-- view-container is the class navigate() hides on every switch.
-                 The console deliberately does not carry `hidden`: it is the
-                 landing view, so leaving it visible avoids a flash on load and
-                 keeps something on screen if the script fails. -->
-            <div id="view-console" class="view-container view-transition">
+            <div id="view-console" class="view-container">
                 <div class="flex flex-col w-full lg:h-[calc(100vh-56px)]">
 
                     <!-- View header -->
-                    <div class="flex flex-wrap items-end justify-between gap-4 px-4 sm:px-margin-desktop py-4 border-b border-outline-variant">
+                    <div class="flex flex-wrap items-center justify-between gap-4 px-4 sm:px-margin-desktop py-3.5 border-b border-outline-variant">
                         <div>
                             <h1 class="font-headline-lg text-headline-lg text-on-surface">Scan console</h1>
-                            <p class="text-[13px] text-on-surface-variant mt-0.5">Upload or pick an image, tag the site, then run the classifier.</p>
+                            <p class="text-[13px] text-on-surface-variant mt-0.5">Load a dermoscopic image, tag anatomic site, and run triage inference.</p>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2.5">
                             <button id="btn-reset-calibration" class="btn">
                                 <span class="material-symbols-outlined">restart_alt</span>
-                                <span class="hidden sm:inline">Reset view</span>
+                                <span class="hidden sm:inline">Reset</span>
                             </button>
                             <button id="btn-run-analysis" class="btn btn-primary">
                                 <span class="material-symbols-outlined">play_arrow</span> Run analysis
@@ -123,127 +125,138 @@
                     <!-- Workspace -->
                     <div class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-unit p-4 sm:p-unit bg-surface-container-lowest xl:overflow-hidden">
 
-                        <!-- Viewport column -->
-                        <div class="xl:col-span-8 flex flex-col panel overflow-hidden min-h-[420px]">
+                        <!-- Darkroom viewport column -->
+                        <div class="xl:col-span-8 flex flex-col panel overflow-hidden min-h-[460px] relative">
 
-                            <!-- Toolbar -->
-                            <div class="px-3 py-2.5 flex flex-wrap items-center justify-between gap-2 bg-surface-container border-b border-outline-variant">
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <span class="chip" id="image-status-tag">Sample image</span>
-                                    <span class="font-data-sm text-[12px] text-on-surface-muted" id="image-resolution-tag">224 &times; 224 px</span>
+                            <!-- Slim top metadata bar -->
+                            <div class="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 bg-surface-container/80 border-b border-outline-variant">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="chip" id="image-status-tag">Sample · Melanocytic Nevus (NV)</span>
+                                    <span class="font-data-sm text-[12px] text-on-surface-muted" id="image-resolution-tag">300 × 300 px</span>
                                 </div>
-                                <div class="flex items-center gap-1.5">
-                                    <button id="btn-toggle-heatmap" class="btn" aria-pressed="false" title="Overlay the model's Grad-CAM attribution map">
-                                        <span class="material-symbols-outlined">blur_on</span>
-                                        <span class="hidden sm:inline">Grad-CAM</span>
-                                    </button>
-                                    <span class="w-px h-5 bg-outline-variant mx-1"></span>
-                                    <button id="btn-zoom-in" class="btn-icon" aria-label="Zoom in" title="Zoom in"><span class="material-symbols-outlined">zoom_in</span></button>
-                                    <button id="btn-zoom-out" class="btn-icon" aria-label="Zoom out" title="Zoom out"><span class="material-symbols-outlined">zoom_out</span></button>
-                                    <button id="btn-pan-reset" class="btn-icon" aria-label="Reset zoom and pan" title="Reset zoom and pan"><span class="material-symbols-outlined">crop_free</span></button>
-                                </div>
+                                <button id="btn-replace-image" type="button" class="btn py-1 px-3 text-[12px]">
+                                    <span class="material-symbols-outlined text-[16px]">upload_file</span>
+                                    <span>Upload image</span>
+                                </button>
                             </div>
 
-                            <!-- Image surface -->
-                            <div class="flex-1 relative bg-surface-dim overflow-hidden flex items-center justify-center cursor-pointer group min-h-[320px]" id="console-drop-zone" role="button" tabindex="0" aria-label="Upload a dermoscopic image">
+                            <!-- Darkroom image canvas -->
+                            <div class="flex-1 relative darkroom-surface overflow-hidden flex items-center justify-center cursor-pointer group min-h-[340px]" id="console-drop-zone" role="button" tabindex="0" aria-label="Upload a dermoscopic image">
                                 <input type="file" id="console-file-input" class="hidden" accept="image/*" />
 
-                                <div id="preview-container" class="relative w-full h-full flex items-center justify-center overflow-hidden">
+                                <div id="preview-container" class="relative w-full h-full flex items-center justify-center overflow-hidden select-none">
                                     <div id="console-viewport-placeholder" class="hidden flex-col items-center justify-center text-center p-8">
-                                        <span class="material-symbols-outlined text-[40px] text-on-surface-muted mb-3">add_photo_alternate</span>
+                                        <span class="material-symbols-outlined text-[38px] text-on-surface-muted mb-3">add_photo_alternate</span>
                                         <p class="text-[15px] font-semibold text-on-surface">Drop a dermoscopic image here</p>
                                         <p class="text-[13px] text-on-surface-variant mt-1">or click to browse &mdash; JPEG or PNG</p>
                                     </div>
                                     <img id="console-viewport-img" src="/samples/nv_1_ISIC_0032285.jpg"
-                                         class="max-h-full max-w-full object-contain transition-transform duration-200"
+                                         class="max-h-[calc(100%-64px)] max-w-[calc(100%-32px)] object-contain rounded-lg shadow-2xl"
+                                         draggable="false"
                                          alt="Dermoscopic image under review" />
-                                    <canvas id="console-heatmap-canvas" class="absolute max-h-full max-w-full object-contain pointer-events-none transition-transform duration-200 hidden z-10" width="224" height="224"></canvas>
+                                    <canvas id="console-heatmap-canvas" class="absolute pointer-events-none hidden z-10" width="300" height="300"></canvas>
 
                                     <!-- Loading state -->
-                                    <div id="analysis-overlay" class="absolute inset-0 bg-background/85 backdrop-blur-sm flex-col items-center justify-center gap-4 hidden z-20">
-                                        <div class="w-10 h-10 border-2 border-outline border-t-primary rounded-full animate-spin"></div>
+                                    <div id="analysis-overlay" class="absolute inset-0 bg-surface-dim/85 backdrop-blur-md flex-col items-center justify-center gap-4 hidden z-30">
+                                        <div class="w-9 h-9 border-2 border-outline border-t-on-surface rounded-full animate-spin"></div>
                                         <div class="text-center">
-                                            <p class="text-[15px] font-semibold text-on-surface">Analysing&hellip;</p>
-                                            <p class="text-[13px] text-on-surface-variant mt-1">Input screening, then EfficientNet-B3</p>
+                                            <p class="text-[14px] font-semibold text-on-surface">Analysing lesion&hellip;</p>
+                                            <p class="text-[12.5px] text-on-surface-variant mt-1">OOD gate screening, then EfficientNet-B3</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div id="drag-prompt" class="absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container/90 backdrop-blur border border-outline-variant text-[12px] text-on-surface-variant pointer-events-none group-hover:border-primary/50 group-hover:text-on-surface transition-colors">
-                                    <span class="material-symbols-outlined text-[16px]">upload</span>
-                                    <span>Click or drop to replace</span>
+                                <!-- Floating display adjustments popover -->
+                                <div id="adjust-popover" class="adjust-popover hidden absolute bottom-16 left-1/2 -translate-x-1/2 z-20 w-[min(92%,460px)] p-4 flex flex-col gap-3">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div>
+                                            <h2 class="label">Display adjustments</h2>
+                                            <p class="text-[11.5px] text-on-surface-muted mt-0.5">Preview only &mdash; inference uses the unmodified upload.</p>
+                                        </div>
+                                        <button id="btn-reset-adjust-inline" type="button" class="btn py-1 px-2.5 text-[11.5px]">Reset</button>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                                        <div class="flex flex-col gap-1.5">
+                                            <div class="flex justify-between text-[12px]">
+                                                <label for="slider-brightness" class="text-on-surface-variant">Brightness</label>
+                                                <span class="font-data-sm text-on-surface" id="val-brightness">100%</span>
+                                            </div>
+                                            <input type="range" id="slider-brightness" min="50" max="150" value="100" />
+                                        </div>
+                                        <div class="flex flex-col gap-1.5">
+                                            <div class="flex justify-between text-[12px]">
+                                                <label for="slider-contrast" class="text-on-surface-variant">Contrast</label>
+                                                <span class="font-data-sm text-on-surface" id="val-contrast">100%</span>
+                                            </div>
+                                            <input type="range" id="slider-contrast" min="50" max="150" value="100" />
+                                        </div>
+                                        <div class="flex flex-col gap-1.5">
+                                            <div class="flex justify-between text-[12px]">
+                                                <label for="slider-saturation" class="text-on-surface-variant">Saturation</label>
+                                                <span class="font-data-sm text-on-surface" id="val-saturation">100%</span>
+                                            </div>
+                                            <input type="range" id="slider-saturation" min="0" max="200" value="100" />
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Display adjustments -->
-                            <div class="bg-surface-container border-t border-outline-variant px-4 py-3.5 flex flex-col gap-3">
-                                <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                                    <h2 class="label">Display adjustments</h2>
-                                    <span class="text-[12px] text-on-surface-muted">Affects this preview only &mdash; the model receives the original image.</span>
-                                </div>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div class="flex flex-col gap-1.5">
-                                        <div class="flex justify-between text-[13px]">
-                                            <label for="slider-brightness" class="text-on-surface-variant">Brightness</label>
-                                            <span class="font-data-sm text-on-surface" id="val-brightness">100%</span>
-                                        </div>
-                                        <input type="range" id="slider-brightness" min="50" max="150" value="100" />
-                                    </div>
-                                    <div class="flex flex-col gap-1.5">
-                                        <div class="flex justify-between text-[13px]">
-                                            <label for="slider-contrast" class="text-on-surface-variant">Contrast</label>
-                                            <span class="font-data-sm text-on-surface" id="val-contrast">100%</span>
-                                        </div>
-                                        <input type="range" id="slider-contrast" min="50" max="150" value="100" />
-                                    </div>
-                                    <div class="flex flex-col gap-1.5">
-                                        <div class="flex justify-between text-[13px]">
-                                            <label for="slider-saturation" class="text-on-surface-variant">Saturation</label>
-                                            <span class="font-data-sm text-on-surface" id="val-saturation">100%</span>
-                                        </div>
-                                        <input type="range" id="slider-saturation" min="0" max="200" value="100" />
-                                    </div>
+                                <!-- Floating glass viewport dock -->
+                                <div class="viewport-dock absolute bottom-3.5 left-1/2 -translate-x-1/2 z-20 px-2 py-1.5 flex items-center gap-1">
+                                    <button id="btn-toggle-heatmap" type="button" class="btn-dock" aria-pressed="false" title="Overlay Grad-CAM attribution">
+                                        <span class="material-symbols-outlined">blur_on</span>
+                                        <span class="hidden sm:inline">Grad-CAM</span>
+                                    </button>
+                                    <span class="w-px h-4 bg-outline mx-0.5"></span>
+                                    <button id="btn-zoom-out" type="button" class="btn-icon" aria-label="Zoom out" title="Zoom out">
+                                        <span class="material-symbols-outlined">remove</span>
+                                    </button>
+                                    <span id="zoom-level-readout" class="font-data-sm text-[12px] text-on-surface-variant w-11 text-center select-none">100%</span>
+                                    <button id="btn-zoom-in" type="button" class="btn-icon" aria-label="Zoom in" title="Zoom in">
+                                        <span class="material-symbols-outlined">add</span>
+                                    </button>
+                                    <button id="btn-pan-reset" type="button" class="btn-icon" aria-label="Fit and reset pan" title="Fit and reset pan">
+                                        <span class="material-symbols-outlined">crop_free</span>
+                                    </button>
+                                    <span class="w-px h-4 bg-outline mx-0.5"></span>
+                                    <button id="btn-adjust-toggle" type="button" class="btn-dock" aria-expanded="false" aria-controls="adjust-popover" title="Display filters">
+                                        <span class="material-symbols-outlined">tune</span>
+                                        <span class="hidden sm:inline">Adjust</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Side column -->
+                        <!-- Inspector side column -->
                         <div class="xl:col-span-4 flex flex-col gap-unit xl:overflow-hidden">
                             <div class="panel p-4 flex flex-col gap-3">
-                                <h2 class="label">Anatomic site</h2>
-                                <p class="text-[12px] text-on-surface-muted -mt-1">Stored with the record. The model sees only the image.</p>
-                                <div class="grid grid-cols-2 gap-2" role="group" aria-label="Anatomic site">
-                                    <button data-site="Anterior Torso" class="site-tag-btn anatomic-tag seg is-active" aria-pressed="true">Anterior torso</button>
-                                    <button data-site="Posterior Torso" class="site-tag-btn anatomic-tag seg" aria-pressed="false">Posterior torso</button>
-                                    <button data-site="Upper Extremities" class="site-tag-btn anatomic-tag seg" aria-pressed="false">Upper extremities</button>
-                                    <button data-site="Lower Extremities" class="site-tag-btn anatomic-tag seg" aria-pressed="false">Lower extremities</button>
-                                    <button data-site="Head &amp; Neck" class="site-tag-btn anatomic-tag seg" aria-pressed="false">Head &amp; neck</button>
-                                    <button data-site="Palms &amp; Soles" class="site-tag-btn anatomic-tag seg" aria-pressed="false">Palms &amp; soles</button>
+                                <div class="flex items-baseline justify-between gap-2">
+                                    <h2 class="label">Anatomic site</h2>
+                                    <span class="text-[11px] text-on-surface-muted">Metadata only</span>
+                                </div>
+                                <div class="seg-track grid grid-cols-2 gap-1" role="group" aria-label="Anatomic site">
+                                    <button type="button" data-site="Anterior Torso" class="site-tag-btn anatomic-tag seg is-active" aria-pressed="true">Anterior torso</button>
+                                    <button type="button" data-site="Posterior Torso" class="site-tag-btn anatomic-tag seg" aria-pressed="false">Posterior torso</button>
+                                    <button type="button" data-site="Upper Extremities" class="site-tag-btn anatomic-tag seg" aria-pressed="false">Upper extremities</button>
+                                    <button type="button" data-site="Lower Extremities" class="site-tag-btn anatomic-tag seg" aria-pressed="false">Lower extremities</button>
+                                    <button type="button" data-site="Head &amp; Neck" class="site-tag-btn anatomic-tag seg" aria-pressed="false">Head &amp; neck</button>
+                                    <button type="button" data-site="Palms &amp; Soles" class="site-tag-btn anatomic-tag seg" aria-pressed="false">Palms &amp; soles</button>
                                 </div>
 
-                                <!-- Case label. The one thing that lets two scans be
-                                     compared as the same lesion rather than as two
-                                     unrelated images — and it is an assertion by
-                                     whoever types it, not something inferred. -->
-                                <div class="pt-1 flex flex-col gap-1.5 border-t border-outline-variant mt-1">
-                                    <label for="input-case-label" class="label pt-3">Case / lesion</label>
+                                <div class="pt-3 flex flex-col gap-1.5 border-t border-outline-variant mt-0.5">
+                                    <label for="input-case-label" class="label">Case / lesion label</label>
                                     <input type="text" id="input-case-label" class="input w-full"
                                            maxlength="64" autocomplete="off" list="case-label-suggestions"
-                                           placeholder="e.g. Left shoulder mole" />
+                                           placeholder="Optional — e.g. Left shoulder mole" />
                                     <datalist id="case-label-suggestions"></datalist>
-                                    <p class="text-[12px] text-on-surface-muted">
-                                        Optional. Scans sharing a label can be compared as one lesion over time.
-                                        Can be set or changed later from History.
-                                    </p>
                                 </div>
                             </div>
 
-                            <div class="panel p-4 flex flex-col gap-3 xl:flex-1 xl:overflow-hidden">
+                            <div class="panel p-4 flex flex-col gap-2.5 xl:flex-1 xl:overflow-hidden">
                                 <div class="flex items-baseline justify-between gap-2">
-                                    <h2 class="label">Reference samples</h2>
-                                    <span class="text-[11px] text-on-surface-muted">HAM10000</span>
+                                    <h2 class="label">Held-out test samples</h2>
+                                    <span class="font-data-sm text-[11px] text-on-surface-muted">HAM10000</span>
                                 </div>
-                                <div class="flex flex-col gap-2 xl:flex-1 xl:overflow-y-auto -mr-1 pr-1" id="sample-gallery-list">
+                                <div class="flex flex-col gap-1.5 xl:flex-1 xl:overflow-y-auto -mr-1 pr-1" id="sample-gallery-list">
                                     <!-- rendered by renderSampleGallery() -->
                                 </div>
                             </div>
@@ -253,11 +266,11 @@
             </div>
 
             <!-- ══════════ VIEW 2 · RESULT ════════════════════════════════ -->
-            <div id="view-results" class="view-container view-transition hidden">
-                <div class="flex flex-col w-full p-4 sm:p-margin-desktop gap-5">
+            <div id="view-results" class="view-container hidden">
+                <div class="flex flex-col w-full p-4 sm:p-margin-desktop gap-5 max-w-[1440px] mx-auto">
 
                     <!-- View header -->
-                    <div class="flex flex-wrap items-end justify-between gap-4">
+                    <div class="flex flex-wrap items-end justify-between gap-4 pb-4 border-b border-outline-variant">
                         <div>
                             <h1 class="font-headline-lg text-headline-lg text-on-surface">Diagnostic result</h1>
                             <p class="font-data-sm text-[12px] text-on-surface-muted mt-1" id="res-session-id">No scan run yet</p>
@@ -275,169 +288,168 @@
                         </div>
                     </div>
 
-                    <!-- Risk banner -->
-                    <div id="results-alert-banner" class="px-4 py-3 rounded-xl border border-outline-variant bg-surface-container flex items-center gap-3">
-                        <span id="results-alert-icon" class="material-symbols-outlined text-on-surface-variant text-[22px]">info</span>
-                        <span id="results-alert-text" class="text-[13px] font-semibold text-on-surface-variant">Awaiting a scan.</span>
+                    <!-- Empty state before any scan -->
+                    <div id="results-empty" class="panel p-12 flex flex-col items-center text-center gap-3">
+                        <span class="material-symbols-outlined text-[36px] text-on-surface-muted">analytics</span>
+                        <p class="text-[15px] font-medium text-on-surface">No analysis result yet</p>
+                        <p class="text-[13px] text-on-surface-variant max-w-md">
+                            Load a dermoscopic lesion image in the scan console and run inference to view class probabilities, Grad-CAM attribution, and OOD screening.
+                        </p>
+                        <button type="button" data-view="view-console" class="btn btn-primary mt-2">
+                            <span class="material-symbols-outlined">center_focus_strong</span> Open scan console
+                        </button>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-
-                        <!-- Left column: what was looked at, then what was found. -->
-                        <div class="lg:col-span-5 flex flex-col gap-4">
-
-                        <!-- The analysed image. Its absence here was the largest
-                             hole in this panel: a diagnosis was presented with no
-                             sight of the lesion, and the PDF export inherited the
-                             same omission. This is the stored upload, fetched back
-                             from the record, so it is provably the image the model
-                             was given rather than whatever the console shows now. -->
-                        <div class="panel overflow-hidden flex flex-col">
-                            <div class="px-4 py-2.5 flex items-center justify-between gap-2 bg-surface-container border-b border-outline-variant">
-                                <h2 class="label">Analysed image</h2>
-                                <button id="btn-results-heatmap" class="btn" aria-pressed="false"
-                                        title="Overlay the model's Grad-CAM attribution map">
-                                    <span class="material-symbols-outlined">blur_on</span>
-                                    <span>Grad-CAM</span>
-                                </button>
-                            </div>
-                            <div id="results-image-wrap" class="relative bg-surface-dim aspect-[4/3] flex items-center justify-center">
-                                <img id="results-image" class="max-h-full max-w-full object-contain hidden" alt="The image submitted for this scan" />
-                                <canvas id="results-heatmap-canvas" class="absolute pointer-events-none hidden" width="224" height="224"></canvas>
-                                <div id="results-image-missing" class="absolute inset-0 hidden flex-col items-center justify-center gap-2 text-on-surface-muted px-4 text-center">
-                                    <span class="material-symbols-outlined text-[30px]">image_not_supported</span>
-                                    <span class="text-[13px]">The stored image is not available.</span>
-                                </div>
-                            </div>
-                            <p class="px-4 py-2.5 text-[12px] text-on-surface-muted border-t border-outline-variant" id="results-image-note">
-                                As submitted. Display adjustments in the console are not applied here.
-                            </p>
+                    <!-- Populated result layout -->
+                    <div id="results-content" class="hidden flex flex-col gap-4">
+                        <div id="results-alert-banner" class="px-4 py-3 rounded-xl border border-outline-variant bg-surface-container flex items-center gap-3">
+                            <span id="results-alert-icon" class="material-symbols-outlined text-on-surface-variant text-[20px]">info</span>
+                            <span id="results-alert-text" class="text-[13px] font-medium text-on-surface-variant">Awaiting a scan.</span>
                         </div>
 
-                        <!-- Primary classification -->
-                        <div class="panel p-6 flex flex-col gap-6">
-                            <div>
-                                <div class="flex items-center justify-between gap-3 mb-3">
-                                    <h2 class="label">Top classification</h2>
-                                    <span id="results-pathology-type" class="chip">&mdash;</span>
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+                            <!-- Left column -->
+                            <div class="lg:col-span-5 flex flex-col gap-4">
+                                <div class="panel overflow-hidden flex flex-col">
+                                    <div class="px-4 py-2.5 flex items-center justify-between gap-2 bg-surface-container border-b border-outline-variant">
+                                        <h2 class="label">Analysed image</h2>
+                                        <button id="btn-results-heatmap" type="button" class="btn py-1 px-3 text-[12px]" aria-pressed="false"
+                                                title="Overlay the model's Grad-CAM attribution map">
+                                            <span class="material-symbols-outlined text-[16px]">blur_on</span>
+                                            <span>Grad-CAM</span>
+                                        </button>
+                                    </div>
+                                    <div id="results-image-wrap" class="relative darkroom-surface aspect-[4/3] flex items-center justify-center">
+                                        <img id="results-image" class="max-h-full max-w-full object-contain hidden" alt="The image submitted for this scan" />
+                                        <canvas id="results-heatmap-canvas" class="absolute pointer-events-none hidden" width="300" height="300"></canvas>
+                                        <div id="results-image-missing" class="absolute inset-0 hidden flex-col items-center justify-center gap-2 text-on-surface-muted px-4 text-center">
+                                            <span class="material-symbols-outlined text-[30px]">image_not_supported</span>
+                                            <span class="text-[13px]">The stored image is not available.</span>
+                                        </div>
+                                    </div>
+                                    <p class="px-4 py-2.5 text-[12px] text-on-surface-muted border-t border-outline-variant" id="results-image-note">
+                                        As submitted. Console display adjustments are not applied here.
+                                    </p>
                                 </div>
-                                <h3 class="font-display-lg text-display-lg text-on-surface" id="results-pathology-title">&mdash;</h3>
-                                <p class="font-data-sm text-[12px] text-on-surface-muted mt-1.5" id="results-pathology-code">&mdash;</p>
-                                <p class="text-body-md text-on-surface-variant mt-3" id="results-pathology-desc">Run a scan to populate this panel.</p>
+
+                                <div class="panel p-6 flex flex-col gap-6">
+                                    <div>
+                                        <div class="flex items-center justify-between gap-3 mb-2.5">
+                                            <h2 class="label">Top classification</h2>
+                                            <span id="results-pathology-type" class="chip">&mdash;</span>
+                                        </div>
+                                        <h3 class="font-display-lg text-display-lg text-on-surface" id="results-pathology-title">&mdash;</h3>
+                                        <p class="font-data-sm text-[12px] text-on-surface-muted mt-1.5" id="results-pathology-code">&mdash;</p>
+                                        <p class="text-body-md text-on-surface-variant mt-3" id="results-pathology-desc">Run a scan to populate this panel.</p>
+                                    </div>
+
+                                    <div class="relative self-center w-[184px] h-[184px] shrink-0">
+                                        <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
+                                            <circle cx="60" cy="60" r="46" stroke="#202027" stroke-width="8" fill="none" />
+                                            <circle id="gauge-confidence-circle" cx="60" cy="60" r="46" stroke="#f4f4f6" stroke-width="8" fill="none"
+                                                    stroke-dasharray="289" stroke-dashoffset="289" stroke-linecap="round" class="transition-all duration-700" />
+                                        </svg>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                            <span class="font-data-lg text-[32px] leading-9 font-semibold text-on-surface tabular" id="gauge-confidence-val">&mdash;</span>
+                                            <span class="label mt-1.5" id="gauge-risk-status">Confidence</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2.5">
+                                        <div class="panel-inset p-3">
+                                            <span class="label">Anatomic site</span>
+                                            <p class="text-[13.5px] font-medium text-on-surface mt-1" id="res-anatomic-site">&mdash;</p>
+                                        </div>
+                                        <div class="panel-inset p-3">
+                                            <span class="label">Decision threshold</span>
+                                            <p class="font-data-sm text-[13.5px] font-medium text-on-surface mt-1" id="res-threshold">&mdash;</p>
+                                        </div>
+                                        <div class="panel-inset p-3">
+                                            <span class="label">Model inference</span>
+                                            <p class="font-data-sm text-[13.5px] font-medium text-on-surface mt-1 tabular" id="res-latency">&mdash;</p>
+                                        </div>
+                                        <div class="panel-inset p-3">
+                                            <span class="label">Queue wait</span>
+                                            <p class="font-data-sm text-[13.5px] font-medium text-on-surface mt-1 tabular" id="res-queue">&mdash;</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Confidence gauge -->
-                            <div class="relative self-center w-[196px] h-[196px] shrink-0">
-                                <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
-                                    <circle cx="60" cy="60" r="46" stroke="#212936" stroke-width="9" fill="none" />
-                                    <circle id="gauge-confidence-circle" cx="60" cy="60" r="46" stroke="#62a8e8" stroke-width="9" fill="none"
-                                            stroke-dasharray="289" stroke-dashoffset="289" stroke-linecap="round" class="transition-all duration-700" />
-                                </svg>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-                                    <span class="font-data-lg text-[34px] leading-9 font-semibold text-on-surface tabular" id="gauge-confidence-val">&mdash;</span>
-                                    <span class="label mt-1.5" id="gauge-risk-status">Confidence</span>
+                            <!-- Right column -->
+                            <div class="lg:col-span-7 flex flex-col gap-4">
+                                <div class="panel p-6 flex flex-col gap-5">
+                                    <div>
+                                        <h2 class="font-headline-md text-headline-md text-on-surface">Probability across all 7 classes</h2>
+                                        <p class="text-[13px] text-on-surface-variant mt-1">Temperature-scaled softmax output summing to 100%.</p>
+                                    </div>
+                                    <div class="flex-1 flex flex-col gap-4" id="results-probability-matrix">
+                                        <p class="text-[13px] text-on-surface-muted">Run a scan to populate this panel.</p>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="panel-inset p-3">
-                                    <span class="label">Anatomic site</span>
-                                    <p class="text-[14px] font-medium text-on-surface mt-1" id="res-anatomic-site">&mdash;</p>
+                                <div class="panel p-6 flex flex-col gap-4">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <h2 class="font-headline-md text-headline-md text-on-surface">Input screening</h2>
+                                        <span id="ood-status-badge" class="chip">&mdash;</span>
+                                    </div>
+                                    <p class="text-body-md text-on-surface-variant" id="ood-status-text">Awaiting a scan.</p>
+                                    <div class="grid grid-cols-3 gap-2.5">
+                                        <div class="panel-inset p-3">
+                                            <span class="label">Rel. contrast</span>
+                                            <p class="font-data-lg text-data-lg text-on-surface mt-1" id="ood-rel-contrast">&mdash;</p>
+                                        </div>
+                                        <div class="panel-inset p-3">
+                                            <span class="label">High-freq ratio</span>
+                                            <p class="font-data-lg text-data-lg text-on-surface mt-1" id="ood-hf-ratio">&mdash;</p>
+                                        </div>
+                                        <div class="panel-inset p-3">
+                                            <span class="label">Blue-green hue</span>
+                                            <p class="font-data-lg text-data-lg text-on-surface mt-1" id="ood-blue-green">&mdash;</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-[12px] text-on-surface-muted" id="ood-calibration-note"></p>
                                 </div>
-                                <div class="panel-inset p-3">
-                                    <span class="label">Decision threshold</span>
-                                    <p class="font-data-sm text-[14px] font-medium text-on-surface mt-1" id="res-threshold">&mdash;</p>
-                                </div>
-                                <div class="panel-inset p-3">
-                                    <span class="label">Model inference</span>
-                                    <p class="font-data-sm text-[14px] font-medium text-on-surface mt-1 tabular" id="res-latency">&mdash;</p>
-                                </div>
-                                <div class="panel-inset p-3">
-                                    <span class="label">Queue wait</span>
-                                    <p class="font-data-sm text-[14px] font-medium text-on-surface mt-1 tabular" id="res-queue">&mdash;</p>
-                                </div>
-                            </div>
-                        </div>
-                        </div>
 
-                        <!-- Right column: the model's full output, then the
-                             screening that let the image through to it. -->
-                        <div class="lg:col-span-7 flex flex-col gap-4">
-
-                        <!-- Probability distribution -->
-                        <div class="panel p-6 flex flex-col gap-5">
-                            <div>
-                                <h2 class="font-headline-md text-headline-md text-on-surface">Probability across all 7 classes</h2>
-                                <p class="text-[13px] text-on-surface-variant mt-1">Softmax output. The bars sum to 100%.</p>
-                            </div>
-                            <div class="flex-1 flex flex-col gap-4" id="results-probability-matrix">
-                                <p class="text-[13px] text-on-surface-muted">Run a scan to populate this panel.</p>
-                            </div>
-                        </div>
-
-                        <!-- Input screening -->
-                        <div class="panel p-6 flex flex-col gap-4">
-                            <div class="flex items-center justify-between gap-3">
-                                <h2 class="font-headline-md text-headline-md text-on-surface">Input screening</h2>
-                                <span id="ood-status-badge" class="chip">&mdash;</span>
-                            </div>
-                            <p class="text-body-md text-on-surface-variant" id="ood-status-text">Awaiting a scan.</p>
-                            <div class="grid grid-cols-3 gap-3">
-                                <div class="panel-inset p-3">
-                                    <span class="label">Rel. contrast</span>
-                                    <p class="font-data-lg text-data-lg text-on-surface mt-1" id="ood-rel-contrast">&mdash;</p>
-                                </div>
-                                <div class="panel-inset p-3">
-                                    <span class="label">High-freq ratio</span>
-                                    <p class="font-data-lg text-data-lg text-on-surface mt-1" id="ood-hf-ratio">&mdash;</p>
-                                </div>
-                                <div class="panel-inset p-3">
-                                    <span class="label">Blue-green hue</span>
-                                    <p class="font-data-lg text-data-lg text-on-surface mt-1" id="ood-blue-green">&mdash;</p>
+                                <div class="panel p-6 flex flex-col gap-3.5">
+                                    <h2 class="font-headline-md text-headline-md text-on-surface">Clinical summary</h2>
+                                    <p class="text-body-md text-on-surface-variant" id="res-clinical-summary">Awaiting a scan.</p>
+                                    <div class="panel-inset p-3 flex items-start gap-2.5 text-[12px] text-on-surface-variant leading-5">
+                                        <span class="material-symbols-outlined text-[18px] text-on-surface-muted shrink-0 mt-0.5">info</span>
+                                        <span>This is a research decision-support tool, not a diagnosis. Every output requires clinical correlation.</span>
+                                    </div>
                                 </div>
                             </div>
-                            <p class="text-[12px] text-on-surface-muted" id="ood-calibration-note"></p>
-                        </div>
-                        </div>
-                    </div>
-
-                    <!-- Summary -->
-                    <div class="panel p-6 flex flex-col gap-4">
-                        <h2 class="font-headline-md text-headline-md text-on-surface">Summary</h2>
-                        <p class="text-body-md text-on-surface-variant" id="res-clinical-summary">Awaiting a scan.</p>
-                        <div class="panel-inset p-3 flex items-start gap-2.5 text-[12px] text-on-surface-variant leading-5">
-                            <span class="material-symbols-outlined text-[18px] text-on-surface-muted shrink-0 mt-0.5">info</span>
-                            <span>This is a research decision-support tool, not a diagnosis. Every output requires clinical correlation.</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- ══════════ VIEW 3 · COMPARE ═══════════════════════════════ -->
-            <!-- Two *recorded* scans, not two loose images. The previous build
-                 accepted arbitrary uploads into both slots, which meant the view
-                 could show pictures it had no model output for, and could never
-                 show anything but the pictures. Comparison is now anchored to
-                 history records, so every number on this screen was produced by
-                 the model on the image beside it. -->
-            <div id="view-compare" class="view-container view-transition hidden">
-                <div class="flex flex-col w-full">
+            <div id="view-compare" class="view-container hidden">
+                <div class="flex flex-col w-full max-w-[1440px] mx-auto">
 
                     <div class="flex flex-wrap items-end justify-between gap-4 px-4 sm:px-margin-desktop py-4 border-b border-outline-variant">
                         <div>
                             <h1 class="font-headline-lg text-headline-lg text-on-surface">Compare scans</h1>
-                            <p class="text-[13px] text-on-surface-variant mt-0.5">Pick two recorded scans to inspect their images and model output together.</p>
+                            <p class="text-[13px] text-on-surface-variant mt-0.5">Inspect two recorded scans and their model outputs side by side.</p>
                         </div>
-                        <div class="flex items-center gap-3">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <span id="compare-zoom-readout" class="font-data-sm text-[12px] text-on-surface-muted px-2.5 py-1 rounded-full border border-outline-variant bg-surface-container">100%</span>
+                            <button id="btn-compare-zoom-reset" type="button" class="btn py-1.5 px-3 text-[12px]" title="Reset zoom">
+                                <span class="material-symbols-outlined text-[16px]">crop_free</span>
+                                <span class="hidden sm:inline">Reset zoom</span>
+                            </button>
                             <button id="btn-compare-refresh" class="btn">
                                 <span class="material-symbols-outlined">refresh</span>
-                                <span class="hidden sm:inline">Reload records</span>
+                                <span class="hidden sm:inline">Reload</span>
                             </button>
-                            <label class="flex items-center gap-2.5 text-[13px] text-on-surface-variant cursor-pointer select-none">
+                            <label class="flex items-center gap-2 text-[13px] text-on-surface-variant cursor-pointer select-none">
                                 <span class="hidden sm:inline">Link zoom</span>
-                                <button id="syncToggle" role="switch" aria-checked="true" aria-label="Link zoom between the two images"
-                                        class="w-9 h-5 rounded-full relative transition-colors duration-200 bg-primary/50 border border-primary/60">
-                                    <span id="syncThumb" class="w-3.5 h-3.5 bg-primary rounded-full absolute right-[2px] top-[2px] transition-transform duration-200"></span>
+                                <button id="syncToggle" type="button" role="switch" aria-checked="true" aria-label="Link zoom between the two images"
+                                        class="w-9 h-5 rounded-full relative transition-colors duration-200 bg-on-surface border border-on-surface/50">
+                                    <span id="syncThumb" class="w-3.5 h-3.5 bg-on-primary rounded-full absolute right-[2px] top-[2px] transition-transform duration-200"></span>
                                 </button>
                             </label>
                         </div>
@@ -446,7 +458,7 @@
                     <!-- Record pickers -->
                     <div class="px-4 sm:px-margin-desktop pt-4 flex flex-col gap-3">
                         <div class="panel p-4 flex flex-col gap-1.5">
-                            <label for="compare-case-filter" class="label">Case</label>
+                            <label for="compare-case-filter" class="label">Case filter</label>
                             <select id="compare-case-filter" class="input w-full md:max-w-md">
                                 <option value="">All scans</option>
                             </select>
@@ -461,7 +473,7 @@
                                     <option value="">Select a recorded scan&hellip;</option>
                                 </select>
                             </div>
-                            <button id="btn-compare-swap" class="btn justify-center md:mb-0.5" title="Swap A and B">
+                            <button id="btn-compare-swap" type="button" class="btn justify-center md:mb-0.5" title="Swap A and B">
                                 <span class="material-symbols-outlined">swap_horiz</span>
                                 <span class="md:hidden">Swap A and B</span>
                             </button>
@@ -480,25 +492,27 @@
                         <p class="text-[15px] font-medium text-on-surface">Choose two scans above</p>
                         <p class="text-[13px] text-on-surface-variant max-w-md">
                             Only completed scans appear here. To compare a new image, run it through the
-                            scan console first &mdash; it is then available in this list.
+                            scan console first.
                         </p>
+                        <button type="button" data-view="view-console" class="btn btn-primary mt-1">
+                            <span class="material-symbols-outlined">center_focus_strong</span> Go to scan console
+                        </button>
                     </div>
 
                     <!-- Comparison -->
                     <div id="compare-content" class="hidden flex-col gap-4 p-4 sm:p-margin-desktop">
 
-                        <!-- Images -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="flex flex-col panel overflow-hidden">
-                                <div class="px-3 py-2.5 flex items-center justify-between gap-2 bg-surface-container border-b border-outline-variant">
+                                <div class="px-3.5 py-2.5 flex items-center justify-between gap-2 bg-surface-container border-b border-outline-variant">
                                     <div class="flex items-center gap-2 min-w-0">
-                                        <span class="text-[13px] font-semibold text-on-surface shrink-0">A</span>
+                                        <span class="text-[12.5px] font-semibold text-on-surface shrink-0">A</span>
                                         <span class="font-data-sm text-[12px] text-on-surface-muted truncate" id="compare-a-caption">&mdash;</span>
                                     </div>
                                     <span id="compare-a-chip" class="chip shrink-0">&mdash;</span>
                                 </div>
-                                <div class="relative bg-surface-dim overflow-hidden aspect-[4/3]" id="viewportLeft">
-                                    <img id="img-compare-left" class="w-full h-full object-contain hidden" alt="Recorded scan A" />
+                                <div class="relative darkroom-surface overflow-hidden aspect-[4/3]" id="viewportLeft">
+                                    <img id="img-compare-left" class="w-full h-full object-contain hidden transition-transform duration-150" alt="Recorded scan A" />
                                     <div id="compare-a-missing" class="absolute inset-0 hidden flex-col items-center justify-center gap-2 text-on-surface-muted px-4 text-center">
                                         <span class="material-symbols-outlined text-[32px]">image_not_supported</span>
                                         <span class="text-[13px]">The image for this record is no longer stored.<br />Its recorded values below are unaffected.</span>
@@ -507,15 +521,15 @@
                             </div>
 
                             <div class="flex flex-col panel overflow-hidden">
-                                <div class="px-3 py-2.5 flex items-center justify-between gap-2 bg-surface-container border-b border-outline-variant">
+                                <div class="px-3.5 py-2.5 flex items-center justify-between gap-2 bg-surface-container border-b border-outline-variant">
                                     <div class="flex items-center gap-2 min-w-0">
-                                        <span class="text-[13px] font-semibold text-on-surface shrink-0">B</span>
+                                        <span class="text-[12.5px] font-semibold text-on-surface shrink-0">B</span>
                                         <span class="font-data-sm text-[12px] text-on-surface-muted truncate" id="compare-b-caption">&mdash;</span>
                                     </div>
                                     <span id="compare-b-chip" class="chip shrink-0">&mdash;</span>
                                 </div>
-                                <div class="relative bg-surface-dim overflow-hidden aspect-[4/3]" id="viewportRight">
-                                    <img id="img-compare-right" class="w-full h-full object-contain hidden" alt="Recorded scan B" />
+                                <div class="relative darkroom-surface overflow-hidden aspect-[4/3]" id="viewportRight">
+                                    <img id="img-compare-right" class="w-full h-full object-contain hidden transition-transform duration-150" alt="Recorded scan B" />
                                     <div id="compare-b-missing" class="absolute inset-0 hidden flex-col items-center justify-center gap-2 text-on-surface-muted px-4 text-center">
                                         <span class="material-symbols-outlined text-[32px]">image_not_supported</span>
                                         <span class="text-[13px]">The image for this record is no longer stored.<br />Its recorded values below are unaffected.</span>
@@ -524,7 +538,6 @@
                             </div>
                         </div>
 
-                        <!-- At a glance -->
                         <div class="grid grid-cols-2 xl:grid-cols-5 gap-3" id="compare-summary">
                             <div class="panel p-4">
                                 <span class="label">Predicted class</span>
@@ -553,7 +566,6 @@
                             </div>
                         </div>
 
-                        <!-- Per-class output -->
                         <div class="panel p-5 sm:p-6 flex flex-col gap-4">
                             <div>
                                 <h2 class="font-headline-md text-headline-md text-on-surface">Model output, class by class</h2>
@@ -578,7 +590,6 @@
                             </div>
                         </div>
 
-                        <!-- Full record -->
                         <div class="panel p-5 sm:p-6 flex flex-col gap-4">
                             <h2 class="font-headline-md text-headline-md text-on-surface">Recorded values</h2>
                             <div class="w-full overflow-x-auto">
@@ -595,7 +606,6 @@
                             </div>
                         </div>
 
-                        <!-- What this view does and does not establish -->
                         <div class="panel-inset p-4 flex items-start gap-3">
                             <span class="material-symbols-outlined text-[20px] text-on-surface-muted shrink-0 mt-0.5">info</span>
                             <div class="text-[13px] text-on-surface-variant leading-5">
@@ -604,8 +614,6 @@
                                     Every difference shown above is a difference between two model outputs. None of it is a
                                     measurement of the skin: no growth, diameter, pigmentation or border metric is computed
                                     anywhere in this application, and the elapsed time is the gap between two database rows.
-                                    A class probability moving between two scans can reflect lighting, framing, focus or scale
-                                    just as readily as anything about the lesion.
                                 </p>
                             </div>
                         </div>
@@ -614,10 +622,10 @@
             </div>
 
             <!-- ══════════ VIEW 4 · HISTORY ═══════════════════════════════ -->
-            <div id="view-analytics" class="view-container view-transition hidden">
-                <div class="flex flex-col w-full p-4 sm:p-margin-desktop gap-5">
+            <div id="view-analytics" class="view-container hidden">
+                <div class="flex flex-col w-full p-4 sm:p-margin-desktop gap-5 max-w-[1440px] mx-auto">
 
-                    <div>
+                    <div class="pb-4 border-b border-outline-variant">
                         <h1 class="font-headline-lg text-headline-lg text-on-surface">History</h1>
                         <p class="text-[13px] text-on-surface-variant mt-0.5">Every scan recorded by this instance.</p>
                     </div>
@@ -625,20 +633,20 @@
                     <section class="grid grid-cols-2 xl:grid-cols-4 gap-3">
                         <div class="panel p-4">
                             <span class="label">Total scans</span>
-                            <p class="font-data-lg text-[30px] leading-9 font-semibold text-on-surface mt-1.5 tabular" id="kpi-total-scans">&mdash;</p>
+                            <p class="font-data-lg text-[28px] leading-9 font-semibold text-on-surface mt-1.5 tabular" id="kpi-total-scans">&mdash;</p>
                         </div>
                         <div class="panel p-4">
                             <span class="label">Flagged high risk</span>
-                            <p class="font-data-lg text-[30px] leading-9 font-semibold text-risk-high mt-1.5 tabular" id="kpi-high-risk">&mdash;</p>
+                            <p class="font-data-lg text-[28px] leading-9 font-semibold text-risk-high mt-1.5 tabular" id="kpi-high-risk">&mdash;</p>
                             <p class="text-[12px] text-on-surface-muted mt-1">MEL, BCC or AKIEC</p>
                         </div>
                         <div class="panel p-4">
                             <span class="label">Not flagged</span>
-                            <p class="font-data-lg text-[30px] leading-9 font-semibold text-risk-low mt-1.5 tabular" id="kpi-low-risk">&mdash;</p>
+                            <p class="font-data-lg text-[28px] leading-9 font-semibold text-risk-low mt-1.5 tabular" id="kpi-low-risk">&mdash;</p>
                         </div>
                         <div class="panel p-4">
                             <span class="label">Mean confidence</span>
-                            <p class="font-data-lg text-[30px] leading-9 font-semibold text-on-surface mt-1.5 tabular" id="kpi-avg-confidence">&mdash;</p>
+                            <p class="font-data-lg text-[28px] leading-9 font-semibold text-on-surface mt-1.5 tabular" id="kpi-avg-confidence">&mdash;</p>
                         </div>
                     </section>
 
@@ -650,7 +658,7 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <label for="history-search-input" class="sr-only">Search scans</label>
-                                <input type="text" id="history-search-input" placeholder="Search diagnosis, case or ID" class="input w-full sm:w-60" />
+                                <input type="text" id="history-search-input" placeholder="Search diagnosis, case or ID" class="input w-full sm:w-64" />
                                 <button id="btn-export-csv" class="btn">
                                     <span class="material-symbols-outlined">download</span><span class="hidden sm:inline">CSV</span>
                                 </button>
@@ -660,14 +668,14 @@
                         <div class="w-full overflow-x-auto">
                             <table class="w-full text-left whitespace-nowrap">
                                 <thead>
-                                    <tr class="border-b border-outline-variant">
+                                    <tr class="border-b border-outline-variant bg-surface-container/40">
                                         <th scope="col" class="label py-3 px-5">ID</th>
                                         <th scope="col" class="label py-3 px-5">Recorded</th>
                                         <th scope="col" class="label py-3 px-5">Case</th>
                                         <th scope="col" class="label py-3 px-5">Prediction</th>
                                         <th scope="col" class="label py-3 px-5 text-right">Confidence</th>
                                         <th scope="col" class="label py-3 px-5">Flag</th>
-                                        <th scope="col" class="label py-3 px-5 text-right">&nbsp;</th>
+                                        <th scope="col" class="label py-3 px-5 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="analytics-history-tbody" class="text-body-md text-on-surface">
@@ -680,19 +688,19 @@
             </div>
 
             <!-- ══════════ VIEW 5 · REFERENCE ═════════════════════════════ -->
-            <div id="view-knowledge" class="view-container view-transition hidden">
-                <div class="flex flex-col w-full p-4 sm:p-margin-desktop gap-5">
+            <div id="view-knowledge" class="view-container hidden">
+                <div class="flex flex-col w-full p-4 sm:p-margin-desktop gap-5 max-w-[1440px] mx-auto">
 
-                    <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+                    <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-4 border-b border-outline-variant">
                         <div>
                             <h1 class="font-headline-lg text-headline-lg text-on-surface">Class reference</h1>
                             <p class="text-[13px] text-on-surface-variant mt-0.5 max-w-xl">The seven HAM10000 lesion classes this model predicts.</p>
                         </div>
-                        <div class="flex flex-wrap gap-2" id="knowledge-filter-group" role="group" aria-label="Filter by category">
-                            <button data-cat="all" class="kh-filter-btn seg is-active" aria-pressed="true">All</button>
-                            <button data-cat="Malignant" class="kh-filter-btn seg" aria-pressed="false">Malignant</button>
-                            <button data-cat="Pre-Malignant" class="kh-filter-btn seg" aria-pressed="false">Pre-malignant</button>
-                            <button data-cat="Benign" class="kh-filter-btn seg" aria-pressed="false">Benign</button>
+                        <div class="seg-track inline-flex flex-wrap gap-1 self-start lg:self-auto" id="knowledge-filter-group" role="group" aria-label="Filter by category">
+                            <button type="button" data-cat="all" class="kh-filter-btn seg is-active" aria-pressed="true">All</button>
+                            <button type="button" data-cat="Malignant" class="kh-filter-btn seg" aria-pressed="false">Malignant</button>
+                            <button type="button" data-cat="Pre-Malignant" class="kh-filter-btn seg" aria-pressed="false">Pre-malignant</button>
+                            <button type="button" data-cat="Benign" class="kh-filter-btn seg" aria-pressed="false">Benign</button>
                         </div>
                     </div>
 
@@ -807,17 +815,10 @@
             </div>
 
             <!-- ══════════ VIEW 6 · MODEL CARD ════════════════════════════ -->
-            <!-- Every figure on this screen is read from a file by /api/model.
-                 The repository's premise is honest measurement, and until now
-                 none of it reached the interface: accuracy, per-class recall and
-                 the confusion matrix sat in docs/ where only someone reading the
-                 source would find them. Nothing here is computed in the client
-                 beyond percentage formatting, and an artifact the server could
-                 not read is reported as unavailable rather than left blank. -->
-            <div id="view-model" class="view-container view-transition hidden">
-                <div class="flex flex-col w-full p-4 sm:p-margin-desktop gap-5">
+            <div id="view-model" class="view-container hidden">
+                <div class="flex flex-col w-full p-4 sm:p-margin-desktop gap-5 max-w-[1440px] mx-auto">
 
-                    <div class="flex flex-wrap items-end justify-between gap-4">
+                    <div class="flex flex-wrap items-end justify-between gap-4 pb-4 border-b border-outline-variant">
                         <div>
                             <h1 class="font-headline-lg text-headline-lg text-on-surface">Model card</h1>
                             <p class="text-[13px] text-on-surface-variant mt-0.5" id="model-subtitle">
@@ -830,16 +831,11 @@
                         </button>
                     </div>
 
-                    <!-- Whether these figures describe the running configuration -->
                     <div id="model-provenance" class="px-4 py-3 rounded-xl border border-outline-variant bg-surface-container flex items-start gap-3">
-                        <span id="model-provenance-icon" class="material-symbols-outlined text-on-surface-variant text-[22px] shrink-0">info</span>
+                        <span id="model-provenance-icon" class="material-symbols-outlined text-on-surface-variant text-[20px] shrink-0 mt-0.5">info</span>
                         <p id="model-provenance-text" class="text-[13px] text-on-surface-variant leading-5">Loading&hellip;</p>
                     </div>
 
-                    <!-- Provenance and gate state. Placed above the figures on
-                         purpose: whether a number can be traced is a property of
-                         the number, and belongs beside it rather than in a
-                         footnote underneath. -->
                     <section class="grid grid-cols-1 lg:grid-cols-2 gap-3">
                         <div class="panel p-5 flex flex-col gap-2" id="model-provenance-card">
                             <div class="flex items-center justify-between gap-3">
@@ -858,37 +854,34 @@
                         </div>
                     </section>
 
-                    <!-- Headline figures -->
                     <section class="grid grid-cols-2 xl:grid-cols-4 gap-3" id="model-headline">
                         <div class="panel p-4">
                             <span class="label">Accuracy</span>
-                            <p class="font-data-lg text-[30px] leading-9 font-semibold text-on-surface mt-1.5 tabular" id="model-accuracy">&mdash;</p>
+                            <p class="font-data-lg text-[28px] leading-9 font-semibold text-on-surface mt-1.5 tabular" id="model-accuracy">&mdash;</p>
                             <p class="text-[12px] text-on-surface-muted mt-1" id="model-testset">&mdash;</p>
                         </div>
                         <div class="panel p-4">
                             <span class="label">Macro F1</span>
-                            <p class="font-data-lg text-[30px] leading-9 font-semibold text-on-surface mt-1.5 tabular" id="model-macro-f1">&mdash;</p>
+                            <p class="font-data-lg text-[28px] leading-9 font-semibold text-on-surface mt-1.5 tabular" id="model-macro-f1">&mdash;</p>
                             <p class="text-[12px] text-on-surface-muted mt-1">Unweighted mean across the 7 classes</p>
                         </div>
                         <div class="panel p-4">
                             <span class="label">Melanoma recall</span>
-                            <p class="font-data-lg text-[30px] leading-9 font-semibold text-risk-high mt-1.5 tabular" id="model-mel-recall">&mdash;</p>
+                            <p class="font-data-lg text-[28px] leading-9 font-semibold text-risk-high mt-1.5 tabular" id="model-mel-recall">&mdash;</p>
                             <p class="text-[12px] text-on-surface-muted mt-1" id="model-mel-recall-note">&mdash;</p>
                         </div>
                         <div class="panel p-4">
                             <span class="label">Calibration error</span>
-                            <p class="font-data-lg text-[30px] leading-9 font-semibold text-on-surface mt-1.5 tabular" id="model-ece">&mdash;</p>
+                            <p class="font-data-lg text-[28px] leading-9 font-semibold text-on-surface mt-1.5 tabular" id="model-ece">&mdash;</p>
                             <p class="text-[12px] text-on-surface-muted mt-1">Expected calibration error &mdash; lower is better</p>
                         </div>
                     </section>
 
-                    <!-- The operating point that actually matters clinically -->
                     <section class="panel p-5 sm:p-6 flex flex-col gap-4" id="model-operating-point">
                         <div>
                             <h2 class="font-headline-md text-headline-md text-on-surface">Melanoma operating point</h2>
                             <p class="text-[13px] text-on-surface-variant mt-1">
                                 The prediction alone misses melanomas the independent alert channel still catches.
-                                These two numbers describe that gap, and they are the ones worth arguing about.
                             </p>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -911,7 +904,6 @@
                         <p class="text-[13px] text-on-surface-variant leading-5" id="model-op-prose">&mdash;</p>
                     </section>
 
-                    <!-- Per class -->
                     <section class="panel flex flex-col">
                         <div class="p-5 border-b border-outline-variant">
                             <h2 class="font-headline-md text-headline-md text-on-surface">Per class</h2>
@@ -922,7 +914,7 @@
                         <div class="w-full overflow-x-auto">
                             <table class="w-full text-left whitespace-nowrap">
                                 <thead>
-                                    <tr class="border-b border-outline-variant">
+                                    <tr class="border-b border-outline-variant bg-surface-container/40">
                                         <th scope="col" class="label py-3 px-5">Class</th>
                                         <th scope="col" class="label py-3 px-5 text-right">Support</th>
                                         <th scope="col" class="label py-3 px-5 text-right">Threshold</th>
@@ -936,13 +928,11 @@
                         </div>
                     </section>
 
-                    <!-- Confusion matrix -->
                     <section class="panel p-5 sm:p-6 flex flex-col gap-4">
                         <div>
                             <h2 class="font-headline-md text-headline-md text-on-surface">Confusion matrix</h2>
                             <p class="text-[13px] text-on-surface-variant mt-1">
-                                Rows are the true class, columns the predicted one. The diagonal is correct;
-                                everything off it is a specific, named mistake.
+                                Rows are the true class, columns the predicted one.
                             </p>
                         </div>
                         <div class="w-full overflow-x-auto">
@@ -953,12 +943,11 @@
                         <p class="text-[12px] text-on-surface-muted" id="model-confusion-note">&mdash;</p>
                     </section>
 
-                    <!-- Serving configuration -->
                     <section class="panel flex flex-col">
                         <div class="p-5 border-b border-outline-variant">
                             <h2 class="font-headline-md text-headline-md text-on-surface">Serving configuration</h2>
                             <p class="text-[13px] text-on-surface-variant mt-0.5">
-                                Read live from this process, not from documentation.
+                                Read live from this process.
                             </p>
                         </div>
                         <div class="w-full overflow-x-auto">
@@ -968,7 +957,6 @@
                         </div>
                     </section>
 
-                    <!-- Limits -->
                     <section class="panel p-5 sm:p-6 flex flex-col gap-3">
                         <h2 class="font-headline-md text-headline-md text-on-surface">Limits</h2>
                         <ul class="text-[13px] text-on-surface-variant leading-6 list-disc pl-5 flex flex-col gap-1.5" id="model-limits">
@@ -997,12 +985,6 @@
         </main>
     </div>
 
-    <!-- Populated by buildPrintReport() immediately before an export or a print.
-         The clip wrapper is what keeps it invisible: html2canvas silently
-         captures a blank page when the element it is given is absolutely or
-         fixed positioned, so the report has to stay statically positioned in
-         normal flow. A zero-height parent with overflow:hidden hides it without
-         moving it, and the document's own height is unaffected. -->
     <div id="print-report-clip"><div id="print-report" aria-hidden="true"></div></div>
 
     <script type="module" src="/js/app.js"></script>

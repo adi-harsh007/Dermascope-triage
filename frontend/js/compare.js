@@ -25,8 +25,21 @@ const compareRequest = { a: 0, b: 0 };
 export function applyCompareZoom() {
     const imgLeft = document.getElementById("img-compare-left");
     const imgRight = document.getElementById("img-compare-right");
+    const readout = document.getElementById("compare-zoom-readout");
     if (imgLeft) imgLeft.style.transform = `scale(${compareZoom.a})`;
     if (imgRight) imgRight.style.transform = `scale(${compareZoom.b})`;
+    if (readout) {
+        const za = `${Math.round(compareZoom.a * 100)}%`;
+        const zb = `${Math.round(compareZoom.b * 100)}%`;
+        readout.textContent = compareZoom.linked ? za : `${za} · ${zb}`;
+    }
+}
+
+export function resetCompareZoom() {
+    compareZoom.a = 1.0;
+    compareZoom.b = 1.0;
+    applyCompareZoom();
+    toast("Comparison zoom reset", "info");
 }
 
 function compareOptionLabel(rec) {
@@ -211,9 +224,9 @@ function renderCompareClassTable(a, b) {
         const half = delta === null ? 0 : Math.min(Math.abs(delta) * 100 / 2, 50);
         const positive = (delta || 0) > 0;
         const bar = delta === null ? "" : `
-            <div class="relative h-1.5 w-full bg-surface-container rounded-full">
+            <div class="relative h-1.5 w-full bg-surface-container-highest rounded-full">
                 <span class="absolute inset-y-0 left-1/2 w-px bg-outline"></span>
-                <span class="absolute inset-y-0 ${positive ? "left-1/2" : "right-1/2"} bg-primary rounded-full"
+                <span class="absolute inset-y-0 ${positive ? "left-1/2" : "right-1/2"} bg-on-surface rounded-full"
                       style="width: ${half}%"></span>
             </div>`;
 
@@ -225,7 +238,7 @@ function renderCompareClassTable(a, b) {
             <tr class="border-b border-outline-variant/60">
                 <td class="py-2.5 pr-4 ${isHigh ? "border-l-2 border-l-risk-high/60 pl-3" : "pl-3"}">
                     <span class="text-[13px] ${topA || topB ? "text-on-surface font-medium" : "text-on-surface-variant"}">${meta.name}</span>
-                    <span class="font-data-sm text-[12px] text-on-surface-muted ml-1.5">${cls.toUpperCase()}</span>
+                    <span class="font-data-sm text-[11.5px] text-on-surface-muted ml-1.5">${cls.toUpperCase()}</span>
                 </td>
                 <td class="py-2.5 px-3 text-right font-data-sm text-[13px] tabular ${topA ? "text-on-surface font-semibold" : "text-on-surface-variant"}">${formatPct(pA)}</td>
                 <td class="py-2.5 px-3 text-right font-data-sm text-[13px] tabular ${topB ? "text-on-surface font-semibold" : "text-on-surface-variant"}">${formatPct(pB)}</td>
@@ -367,4 +380,3 @@ export async function loadCompareRecords(force = false) {
     }
     renderCompare();
 }
-

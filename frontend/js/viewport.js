@@ -1,46 +1,131 @@
-/* Console viewport zoom/pan, CSS display filters, and Grad-CAM canvas overlay. */
+/* Console viewport zoom, drag-to-pan, display filters, and Grad-CAM canvas overlay. */
 
 import { IMG_INPUT_SIZE, state } from "./config.js";
 import { toast } from "./utils.js";
 
+let didDragSincePointerDown = false;
+
+export function wasViewportDragged() {
+    return didDragSincePointerDown;
+}
+
 export function updateViewportTransform() {
     const img = document.getElementById("console-viewport-img");
     const canvas = document.getElementById("console-heatmap-canvas");
+    const container = document.getElementById("preview-container");
 
+    const transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
     if (img) {
-        img.style.transform = `scale(${state.zoom}) translate(${state.panX}px, ${state.panY}px)`;
-        img.style.transition = "transform 0.15s ease-out";
+        img.style.transform = transform;
+        img.style.transition = didDragSincePointerDown ? "none" : "transform 0.16s cubic-bezier(0.22, 1, 0.36, 1)";
     }
     if (canvas) {
-        canvas.style.transform = `scale(${state.zoom}) translate(${state.panX}px, ${state.panY}px)`;
-        canvas.style.transition = "transform 0.15s ease-out";
+        canvas.style.transform = transform;
+        canvas.style.transition = didDragSincePointerDown ? "none" : "transform 0.16s cubic-bezier(0.22, 1, 0.36, 1)";
+    }
+    if (container) {
+        container.classList.toggle("cursor-grab", state.zoom > 1.0);
     }
 
     const resTag = document.getElementById("image-resolution-tag");
     if (resTag) {
         const dim = Math.round(IMG_INPUT_SIZE * state.zoom);
-        resTag.textContent = `${dim} x ${dim} px (${Math.round(state.zoom * 100)}%)`;
+        resTag.textContent = `${dim} × ${dim} px`;
+    }
+
+    const zoomReadout = document.getElementById("zoom-level-readout");
+    if (zoomReadout) {
+        zoomReadout.textContent = `${Math.round(state.zoom * 100)}%`;
     }
 }
 
-export function zoomIn() {
-    state.zoom = Math.min(state.zoom + 0.25, 3.0);
+export function zoomIn(silent = false) {
+    state.zoom = Math.min(Number((state.zoom + 0.25).toFixed(2)), 4.0);
     updateViewportTransform();
-    toast(`Viewport Zoom: ${Math.round(state.zoom * 100)}%`, "info");
+    if (!silent) toast(`Zoom ${Math.round(state.zoom * 100)}%`, "info");
 }
 
-export function zoomOut() {
-    state.zoom = Math.max(state.zoom - 0.25, 0.5);
+export function zoomOut(silent = false) {
+    state.zoom = Math.max(Number((state.zoom - 0.25).toFixed(2)), 0.5);
+    if (state.zoom <= 1.0) {
+        state.panX = 0;
+        state.panY = 0;
+    }
     updateViewportTransform();
-    toast(`Viewport Zoom: ${Math.round(state.zoom * 100)}%`, "info");
+    if (!silent) toast(`Zoom ${Math.round(state.zoom * 100)}%`, "info");
 }
 
-export function resetViewportTransform() {
+export function resetViewportTransform(silent = false) {
     state.zoom = 1.0;
     state.panX = 0;
     state.panY = 0;
+    didDragSincePointerDown = false;
     updateViewportTransform();
-    toast("Viewport Zoom & Pan Reset", "info");
+    if (!silent) toast("Viewport reset", "info");
+}
+
+export function initViewportGestures() {
+    const container = document.getElementById("preview-container");
+    if (!container) return;
+
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let originPanX = 0;
+    let originPanY = 0;
+
+    container.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        if (e.target.closest(".viewport-dock, .adjust-popover")) return;
+        didDragSincePointerDown = false;
+        if (state.zoom <= 1.0) return;
+
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        originPanX = state.panX;
+        originPanY = state.panY;
+        container.classList.add("cursor-grabbing");
+        container.setPointerCapture(e.pointerId);
+    });
+
+    container.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (Math.hypot(dx, dy) > 4) {
+            didDragSincePointerDown = true;
+        }
+        state.panX = originPanX + dx;
+        state.panY = originPanY + dy;
+        updateViewportTransform();
+    });
+
+    const endDrag = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        container.classList.remove("cursor-grabbing");
+        if (container.hasPointerCapture(e.pointerId)) {
+            container.releasePointerCapture(e.pointerId);
+        }
+        updateViewportTransform();
+        setTimeout(() => { didDragSincePointerDown = false; }, 0);
+    };
+
+    container.addEventListener("pointerup", endDrag);
+    container.addEventListener("pointercancel", endDrag);
+
+    container.addEventListener("wheel", (e) => {
+        if (e.target.closest(".adjust-popover")) return;
+        e.preventDefault();
+        const step = e.deltaY < 0 ? 0.15 : -0.15;
+        state.zoom = Math.max(0.5, Math.min(4.0, Number((state.zoom + step).toFixed(2))));
+        if (state.zoom <= 1.0) {
+            state.panX = 0;
+            state.panY = 0;
+        }
+        updateViewportTransform();
+    }, { passive: false });
 }
 
 export function syncHeatmapCanvasToImage(
@@ -117,7 +202,7 @@ export function setResultsHeatmapVisible(visible) {
 
 export function toggleGradCamHeatmap() {
     if (!state.heatmapBase64) {
-        toast("No Grad-CAM attribution is available for this scan.", "warning");
+        toast("Run an analysis first to generate Grad-CAM attribution.", "warning");
         return;
     }
     state.heatmapVisible = !state.heatmapVisible;
@@ -161,7 +246,7 @@ export function updateCalibrationFilters() {
     if (sVal) sVal.textContent = `${saturation}%`;
 }
 
-export function resetCalibration() {
+export function resetCalibration(silent = false) {
     state.calibration = { brightness: 100, contrast: 100, saturation: 100 };
     const bSlider = document.getElementById("slider-brightness");
     const cSlider = document.getElementById("slider-contrast");
@@ -172,7 +257,6 @@ export function resetCalibration() {
     if (sSlider) sSlider.value = 100;
 
     updateCalibrationFilters();
-    resetViewportTransform();
-    toast("Image calibration parameters & viewport reset to baseline defaults", "success");
+    resetViewportTransform(true);
+    if (!silent) toast("Display adjustments and viewport reset", "success");
 }
-

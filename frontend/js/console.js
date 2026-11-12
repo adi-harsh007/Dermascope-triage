@@ -14,6 +14,12 @@ export function setAnatomicSiteUI(site) {
     });
 }
 
+function setSampleSelectionUI(sampleId = null) {
+    document.querySelectorAll("#sample-gallery-list .sample-card").forEach(card => {
+        card.classList.toggle("is-active", Boolean(sampleId) && card.getAttribute("data-sample-id") === sampleId);
+    });
+}
+
 function setAnalyzeButtonIdle(btn) {
     if (!btn) return;
     btn.classList.remove("is-busy");
@@ -31,6 +37,17 @@ export function setConsoleViewportImage(src) {
     const viewportPlaceholder = document.getElementById("console-viewport-placeholder");
     const viewportImg = document.getElementById("console-viewport-img");
     const analyzeBtn = document.getElementById("btn-run-analysis");
+    const canvas = document.getElementById("console-heatmap-canvas");
+    const toggleBtn = document.getElementById("btn-toggle-heatmap");
+
+    // Clear stale heatmap from any previous scan when a new image is loaded.
+    state.heatmapBase64 = null;
+    state.heatmapVisible = false;
+    if (canvas) canvas.classList.add("hidden");
+    if (toggleBtn) {
+        toggleBtn.classList.remove("is-on");
+        toggleBtn.setAttribute("aria-pressed", "false");
+    }
 
     if (viewportImg && viewportPlaceholder) {
         viewportImg.src = src;
@@ -43,17 +60,18 @@ export function setConsoleViewportImage(src) {
         setAnalyzeButtonIdle(analyzeBtn);
     }
 
-    resetCalibration();
+    resetCalibration(true);
 }
 
 export function handleFileSelected(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-        toast("Please upload a valid image file (JPEG, PNG, WEBP).", "error");
+        toast("Please upload a valid image file (JPEG or PNG).", "error");
         return;
     }
 
     state.selectedFile = file;
+    setSampleSelectionUI(null);
 
     const statusTag = document.getElementById("image-status-tag");
     if (statusTag) statusTag.textContent = `Uploaded · ${file.name}`;
@@ -82,6 +100,7 @@ export function loadSampleImage(sampleInput) {
     }
 
     state.selectedFile = null;
+    setSampleSelectionUI(sample.id || null);
     setConsoleViewportImage(sample.url);
 
     const apiSite = toApiSite(sample.site);
@@ -100,18 +119,19 @@ export function renderSampleGallery() {
     const container = document.getElementById("sample-gallery-list");
     if (!container) return;
 
-    container.innerHTML = CLINICAL_SAMPLES.map(s => {
+    container.innerHTML = CLINICAL_SAMPLES.map((s, idx) => {
         const chipClass = s.category === "Malignant" ? "chip chip--high"
             : s.category === "Pre-Malignant" ? "chip chip--mid"
             : s.category === "Benign" ? "chip chip--low"
             : "chip";
+        const isDefault = idx === 3; // sample-nv matches initial img src
         return `
             <button type="button" data-sample-id="${s.id}"
-                    class="sample-card w-full text-left p-2.5 rounded-lg bg-surface-container border border-outline-variant hover:border-outline hover:bg-surface-container-high cursor-pointer transition-colors flex items-center gap-3">
-                <img src="${s.url}" class="w-11 h-11 rounded-md object-cover bg-surface-dim shrink-0" alt="" />
+                    class="sample-card ${isDefault ? "is-active" : ""} w-full text-left p-2.5 rounded-xl cursor-pointer flex items-center gap-3">
+                <img src="${s.url}" class="w-10 h-10 rounded-lg object-cover bg-surface-dim border border-outline-variant shrink-0" alt="" />
                 <span class="min-w-0 flex-1">
                     <span class="block text-[13px] font-medium text-on-surface truncate">${s.name}</span>
-                    <span class="block text-[12px] text-on-surface-muted truncate mt-0.5">${s.site}</span>
+                    <span class="block text-[11.5px] text-on-surface-muted truncate mt-0.5">${s.site}</span>
                 </span>
                 <span class="${chipClass} shrink-0">${s.category}</span>
             </button>
@@ -127,7 +147,7 @@ export function renderSampleGallery() {
     });
 }
 
-export async function runAnalysis() {
+export async function runAnalysis(onAfterAnalysis = null) {
     const analyzeBtn = document.getElementById("btn-run-analysis");
     if (!analyzeBtn || analyzeBtn.disabled) return;
 
@@ -173,14 +193,15 @@ export async function runAnalysis() {
         if (result.heatmap_base64) {
             state.heatmapBase64 = result.heatmap_base64;
             renderGradCamHeatmap(state.heatmapBase64);
-            toast("Diagnostic inference & Grad-CAM map generated!", "success");
+            toast("Analysis complete · Grad-CAM attribution ready", "success");
         } else {
             state.heatmapBase64 = null;
-            toast("Inference complete. Grad-CAM attribution unavailable for this scan.", "warning");
+            toast("Analysis complete · Grad-CAM unavailable", "warning");
         }
 
         state.latestResult = result;
         if (result.case_label) loadCases(true);
+        if (typeof onAfterAnalysis === "function") onAfterAnalysis();
 
         navigate("view-results", result);
     } catch (err) {
@@ -191,4 +212,3 @@ export async function runAnalysis() {
         setAnalysisOverlay(false);
     }
 }
-
