@@ -1,0 +1,74 @@
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments & Dependencies
+.env
+.venv
+env/
+venv/
+ENV/
+node_modules/
+
+# Models & Heavy Binaries
+# Checkpoints anywhere under models/, not just at the top level: models/backup/
+# holds a 123 MB rollback copy per deployment, and an unqualified `git add -A`
+# would otherwise commit every one of them.
+models/**/*.pt
+models/**/*.bin
+models/*.pt
+models/*.bin
+models/backup/
+models/checkpoints/
+models/*.onnx
+models/*.h5
+models/*.ckpt
+
+# Clinical Data & Databases
+*.db
+*.sqlite3
+data/*.db
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Temporary Files & Logs
+*.log
+verify_output.txt
+env_debug.txt
+*.tmp
+
+# IDE, Agent & OS Artifacts
+.claude/
+.vscode/
+.idea/
+.gemini/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+# Local Documents & Archived Presentations / Reports
+archive/
+*.ppt
+*.pptx
+*.doc
+*.docx
+
+# Archives & Export Bundles
+*.zip
+*.tar.gz
+*.7z
+
+# Training checkpoints kept for resume runs (weights live in models/latest.pt)
+models/checkpoints/
+
+# SQLite WAL sidecars (created by journal_mode=WAL)
+data/*.db-wal
+data/*.db-shm

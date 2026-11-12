@@ -1,0 +1,57 @@
+{
+  "class_thresholds": {
+    "akiec": 0.15,
+    "bcc": 0.35,
+    "bkl": 0.1,
+    "df": 0.25,
+    "mel": 0.0,
+    "nv": 0.4,
+    "vasc": 0.3
+  },
+  "readout": "softmax",
+  "fitted_on": "calib+val splits (lesion-disjoint)",
+  "per_class_metrics": {
+    "akiec": {
+      "threshold": 0.15,
+      "f1": 0.5862068965517242,
+      "precision": 0.53125,
+      "recall": 0.6538461538461539
+    },
+    "bcc": {
+      "threshold": 0.35,
+      "f1": 0.7605633802816901,
+      "precision": 0.8571428571428571,
+      "recall": 0.6835443037974683
+    },
+    "bkl": {
+      "threshold": 0.1,
+      "f1": 0.6192170818505338,
+      "precision": 0.7073170731707317,
+      "recall": 0.5506329113924051
+    },
+    "df": {
+      "threshold": 0.25,
+      "f1": 0.6363636363636364,
+      "precision": 0.6363636363636364,
+      "recall": 0.6363636363636364
+    },
+    "mel": {
+      "threshold": 0.0,
+      "f1": 0.6004415011037527,
+      "precision": 0.48056537102473496,
+      "recall": 0.8
+    },
+    "nv": {
+      "threshold": 0.4,
+      "f1": 0.9051321928460343,
+      "precision": 0.9397201291711518,
+      "recall": 0.873
+    },
+    "vasc": {
+      "threshold": 0.3,
+      "f1": 0.8780487804878049,
+      "precision": 0.9473684210526315,
+      "recall": 0.8181818181818182
+    }
+  }
+}
